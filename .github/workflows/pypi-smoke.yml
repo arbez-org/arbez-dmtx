@@ -81,25 +81,39 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: "Smoke (manylinux: /opt/python)"
+      - name: "Smoke (manylinux: /opt/python, uv fallback)"
         if: matrix.container != ''
         shell: bash
         env:
           SPEC: ${{ steps.spec.outputs.spec }}
         run: |
           set -e
-          for PY in /opt/python/cp310-cp310/bin/python \
-                    /opt/python/cp311-cp311/bin/python \
-                    /opt/python/cp312-cp312/bin/python \
-                    /opt/python/cp313-cp313/bin/python \
-                    /opt/python/cp313-cp313t/bin/python \
-                    /opt/python/cp314-cp314/bin/python \
-                    /opt/python/cp314-cp314t/bin/python; do
-            [ -x "$PY" ] || { echo "skip (missing): $PY"; continue; }
-            echo "::group::$PY"
-            "$PY" -m pip install --upgrade pip >/dev/null
-            "$PY" -m pip install --only-binary=:all: pytest pillow "$SPEC"
-            "$PY" -m pip install numpy || echo "numpy unavailable (ndarray test self-skips)"
+          # The manylinux_2_28 image ships most cpXY[t] interpreters under
+          # /opt/python, but not all (e.g. cp313t is currently absent). Prefer
+          # /opt/python; for any version it lacks, provision the interpreter with
+          # uv so the matrix is literally complete. The single py3-none-<plat>
+          # wheel is identical across Pythons, so this exercises the same wheel.
+          /opt/python/cp312-cp312/bin/pip install -q --upgrade uv
+          UV=/opt/python/cp312-cp312/bin/uv
+          for V in 3.10 3.11 3.12 3.13 3.14 3.13t 3.14t; do
+            echo "::group::Python $V"
+            nodots="${V//./}"                       # 3.13 -> 313 ; 3.13t -> 313t
+            case "$V" in
+              *t) base="${nodots%t}"; P="/opt/python/cp${base}-cp${base}t/bin/python" ;;  # -> cp313-cp313t
+              *)  P="/opt/python/cp${nodots}-cp${nodots}/bin/python" ;;                    # -> cp313-cp313
+            esac
+            if [ -x "$P" ]; then
+              PY="$P"
+              "$PY" -m pip install --upgrade pip >/dev/null
+              "$PY" -m pip install --only-binary=:all: pytest pillow "$SPEC"
+              "$PY" -m pip install numpy || echo "numpy unavailable (ndarray test self-skips)"
+            else
+              echo "  /opt/python lacks $V -> provisioning via uv"
+              "$UV" venv ".t$V" --python "$V" || { echo "skip $V (uv cannot provide)"; echo "::endgroup::"; continue; }
+              PY=".t$V/bin/python"
+              "$UV" pip install --python "$PY" --only-binary=:all: pytest pillow "$SPEC"
+              "$UV" pip install --python "$PY" numpy || echo "numpy unavailable (ndarray test self-skips)"
+            fi
             "$PY" -c "import sys, arbez_dmtx; print('  from-PyPI', arbez_dmtx.__version__, 'libdmtx', arbez_dmtx.libdmtx_version(), '| gil', getattr(sys,'_is_gil_enabled',lambda:'n/a')()); print('  at', arbez_dmtx.__file__)"
             "$PY" -m pytest tests -q
             echo "::endgroup::"
