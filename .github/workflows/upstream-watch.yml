@@ -1,0 +1,55 @@
+name: upstream-watch
+
+# Weekly poll of upstream libdmtx (dmtx/libdmtx). libdmtx ships git TAGS, not
+# GitHub Releases, so we read tags. If a version newer than the one pinned in
+# the LIBDMTX_VERSION file exists, open a tracking issue.
+#
+# Why an issue (not an auto-PR): a PR authored by the workflow's GITHUB_TOKEN
+# would NOT trigger the wheels workflow (GitHub's anti-recursion rule), so it
+# couldn't self-validate; and a C-library bump warrants a human glance at the
+# upstream changelog for API breaks. A maintainer bumps VER + pushes, and the
+# wheels CI then rebuilds + tests every platform against the new libdmtx.
+
+on:
+  schedule:
+    - cron: "23 6 * * 1"   # Mondays 06:23 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-libdmtx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open an issue if a newer libdmtx exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          CUR=$(tr -d '[:space:]' < LIBDMTX_VERSION)   # single source of truth
+          LATEST=$(gh api repos/dmtx/libdmtx/tags --jq '.[].name' \
+                   | sed 's/^v//' | grep -E '^[0-9.]+$' | sort -V | tail -1)
+          echo "pinned=$CUR latest=$LATEST"
+          if [ -z "$LATEST" ] || [ "$CUR" = "$LATEST" ]; then echo "up to date"; exit 0; fi
+          NEWER=$(printf '%s\n%s\n' "$CUR" "$LATEST" | sort -V | tail -1)
+          if [ "$NEWER" != "$LATEST" ]; then echo "pinned >= latest, nothing to do"; exit 0; fi
+          TITLE="libdmtx v$LATEST available (vendored: $CUR)"
+          if gh issue list --state open --search "$TITLE in:title" --json number --jq '.[].number' | grep -q .; then
+            echo "tracking issue already open"; exit 0
+          fi
+          printf '%s\n' \
+            "Upstream **dmtx/libdmtx** published **v$LATEST**; arbez-dmtx currently vendors **$CUR**." \
+            "" \
+            "To update: set both \`LIBDMTX_VERSION\` to \`$LATEST\` and \`LIBDMTX_SHA256\` to the new tarball digest, then push to \`main\`." \
+            "The wheels CI rebuilds + tests every platform (Python 3.10-3.14 incl. 3.13t/3.14t)" \
+            "against the new libdmtx, so the change self-validates." \
+            "" \
+            "Check upstream changes first (API breaks):" \
+            "- Compare: https://github.com/dmtx/libdmtx/compare/v$CUR...v$LATEST" \
+            "- Tags: https://github.com/dmtx/libdmtx/tags" \
+            "" \
+            "_Opened automatically by .github/workflows/upstream-watch.yml._" > /tmp/body.md
+          gh issue create --title "$TITLE" --body-file /tmp/body.md

@@ -1,0 +1,24 @@
+# native libs + the libdmtx license text are staged by CI into the wheel; never
+# commit them. (The pylibdmtx MIT text IS committed — it's vendored, not built.)
+*.so
+*.so.*
+*.dylib
+*.dll
+_libdmtx/THIRD_PARTY_LICENSES_libdmtx.txt
+THIRD_PARTY_LICENSES_libdmtx.txt
+
+# build / dist output
+dist/
+dist_raw/
+dist_local/
+build/
+*.egg-info/
+.bld/
+.verify/
+.t*/
+
+# python bytecode + tooling caches
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/

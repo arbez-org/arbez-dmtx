@@ -1,0 +1,38 @@
+[build-system]
+# setuptools>=77 is required for the PEP 639 SPDX `license = "Apache-2.0"`
+# expression below (earlier versions hard-fail on it). `wheel` is needed by
+# setup.py's bdist_wheel subclass.
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arbez-dmtx"
+version = "0.0.1"
+description = "Self-contained DataMatrix encode/decode (vendored libdmtx, bundled on every OS, free-threading safe) - a modern pylibdmtx successor"
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+license = "Apache-2.0"
+authors = [{ name = "arbez" }]
+keywords = ["datamatrix", "data matrix", "barcode", "libdmtx", "pylibdmtx", "decode", "encode"]
+dependencies = ["pillow>=9"]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Free Threading :: 3 - Stable",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Multimedia :: Graphics",
+]
+
+[project.urls]
+Homepage = "https://github.com/arbez-org/arbez-dmtx"
+Repository = "https://github.com/arbez-org/arbez-dmtx"
+Issues = "https://github.com/arbez-org/arbez-dmtx/issues"
+Changelog = "https://github.com/arbez-org/arbez-dmtx/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+arbez_dmtx = ["py.typed", "_libdmtx/*.dylib", "_libdmtx/*.so", "_libdmtx/*.so.*", "_libdmtx/*.dll", "_libdmtx/THIRD_PARTY_LICENSES*"]

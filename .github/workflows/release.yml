@@ -1,0 +1,131 @@
+# Release topology — mirrors arbez-sdk-python (S-063 / S-074).
+#
+# Which versions go where:
+#   - push to `main` (or workflow_dispatch) -> TestPyPI, version
+#       <pyproject-version>.dev<run_number>   (PEP 440 dev pre-release).
+#       The dev train: every commit is published for maintainer validation.
+#       skip-existing:true (re-runs are idempotent).
+#   - push of a `vX.Y.Z` tag -> production PyPI, version = the tag.
+#       The tag MUST equal the pyproject version (guard below), else the run
+#       fails. Any vX.Y.Z is accepted (incl. 0.0.x). skip-existing:false
+#       (a collision on prod is an error and must fail loudly).
+#
+# PEP 440 sorts `0.0.1.dev7 < 0.0.1`, so the dev train always sorts below the
+# matching final release and above earlier ones. Pull the dev train with:
+#   pip install --index-url https://test.pypi.org/simple/ --pre arbez-dmtx
+#
+# Auth: PyPI Trusted Publishing via OIDC on both indexes — no API tokens.
+# One-time maintainer setup per index (browser only):
+#   TestPyPI -> Account -> Publishing -> pending publisher:
+#     project=arbez-dmtx owner=arbez-org repo=arbez-dmtx
+#     workflow=release.yml environment=testpypi
+#   PyPI -> same, environment=pypi
+# and create `testpypi` + `pypi` environments in the repo settings.
+
+name: release — TestPyPI on push to main, PyPI on any vX.Y.Z tag
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why the manual run (recorded in the run log)"
+        required: false
+        default: "manual dry-run"
+
+permissions:
+  contents: read
+
+jobs:
+  compute:
+    name: compute target + version
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.c.outputs.target }}
+      version: ${{ steps.c.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - id: c
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          pkg=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tagv="${GITHUB_REF#refs/tags/v}"
+            # Only strict X.Y.Z[pre] tags publish to prod (reject v-foo etc).
+            if [[ ! "$tagv" =~ ^[0-9]+\.[0-9]+\.[0-9]+([a-z]+[0-9]+)?$ ]]; then
+              echo "::error::Tag v${tagv} is not a valid release version (expected X.Y.Z)."
+              exit 1
+            fi
+            if [ "$tagv" != "$pkg" ]; then
+              echo "::error::Tag v${tagv} != pyproject version ${pkg}. Bump pyproject.toml + src/arbez_dmtx/__init__.py + CHANGELOG.md to ${tagv} before tagging."
+              exit 1
+            fi
+            echo "target=pypi"        >> "$GITHUB_OUTPUT"
+            echo "version=${tagv}"    >> "$GITHUB_OUTPUT"
+            echo "OK: ${tagv} -> production PyPI"
+          else
+            echo "target=testpypi"                       >> "$GITHUB_OUTPUT"
+            echo "version=${pkg}.dev${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "OK: ${pkg}.dev${GITHUB_RUN_NUMBER} -> TestPyPI (dev train)"
+          fi
+
+  build:
+    needs: compute
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.compute.outputs.version }}
+
+  publish-testpypi:
+    name: publish to TestPyPI (dev train)
+    needs: [compute, build]
+    if: needs.compute.outputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/arbez-dmtx
+    permissions:
+      id-token: write   # OIDC trusted publishing — no API token
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: wheel-*
+          merge-multiple: true
+      - run: ls -la dist
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist
+          skip-existing: true
+
+  publish-pypi:
+    name: publish to production PyPI (any vX.Y.Z tag)
+    needs: [compute, build]
+    if: needs.compute.outputs.target == 'pypi'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/arbez-dmtx
+    permissions:
+      id-token: write   # OIDC trusted publishing — no API token
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: wheel-*
+          merge-multiple: true
+      - run: ls -la dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        with:
+          packages-dir: dist
+          skip-existing: false

@@ -1,0 +1,12 @@
+arbez-dmtx
+Copyright (c) arbez. Licensed under Apache-2.0.
+
+This package vendors and bundles third-party components:
+  * libdmtx (the DataMatrix C library) - BSD-2-Clause.
+    Copyright 2005-2016 Mike Laughton, Vadim A. Misbakh-Soloviov and others.
+    The compiled shared library is bundled in the platform wheel; its license
+    text ships as _libdmtx/THIRD_PARTY_LICENSES_libdmtx.txt.
+  * pylibdmtx ctypes wrapper (struct layouts + function signatures) - MIT.
+    Copyright (c) 2016-2020 Lawrence Hudson. Vendored under src/arbez_dmtx/_libdmtx/,
+    modified to remove the distutils dependency and to load a bundled libdmtx.
+    Its full MIT license text ships as _libdmtx/THIRD_PARTY_LICENSES_pylibdmtx.txt.
