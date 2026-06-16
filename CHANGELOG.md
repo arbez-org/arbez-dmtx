@@ -3,7 +3,7 @@
 Notable changes to **arbez-dmtx**. Versioning follows [SemVer](https://semver.org/)
 (pre-1.0: behaviour may change on minor bumps).
 
-## 0.0.1 — unreleased
+## 0.0.1 — 2026-06-16
 
 First release. A self-contained, modern continuation of
 [pylibdmtx](https://github.com/NaturalHistoryMuseum/pylibdmtx).
