@@ -1,6 +1,6 @@
 # arbez-dmtx
 
-[![PyPI](https://img.shields.io/pypi/v/arbez-dmtx.svg)](https://pypi.org/project/arbez-dmtx/)
+[![PyPI](https://img.shields.io/pypi/v/arbez-dmtx)](https://pypi.org/project/arbez-dmtx/)
 [![CI](https://github.com/arbez-org/arbez-dmtx/actions/workflows/wheels.yml/badge.svg)](https://github.com/arbez-org/arbez-dmtx/actions/workflows/wheels.yml)
 [![Python 3.10–3.14](https://img.shields.io/badge/python-3.10--3.14-blue.svg)](https://pypi.org/project/arbez-dmtx/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
