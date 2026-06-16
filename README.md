@@ -1,12 +1,9 @@
 # arbez-dmtx
 
+[![PyPI](https://img.shields.io/pypi/v/arbez-dmtx.svg)](https://pypi.org/project/arbez-dmtx/)
 [![CI](https://github.com/arbez-org/arbez-dmtx/actions/workflows/wheels.yml/badge.svg)](https://github.com/arbez-org/arbez-dmtx/actions/workflows/wheels.yml)
-[![Python 3.10–3.14](https://img.shields.io/badge/python-3.10--3.14-blue.svg)](https://github.com/arbez-org/arbez-dmtx)
+[![Python 3.10–3.14](https://img.shields.io/badge/python-3.10--3.14-blue.svg)](https://pypi.org/project/arbez-dmtx/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-<!-- PyPI version + pyversions badges read pypi.org and are added on the first
-     production release (a vX.Y.Z tag); they 404 until then. -->
-<!-- [![PyPI](https://img.shields.io/pypi/v/arbez-dmtx.svg)](https://pypi.org/project/arbez-dmtx/) -->
-<!-- [![Python](https://img.shields.io/pypi/pyversions/arbez-dmtx.svg)](https://pypi.org/project/arbez-dmtx/) -->
 
 
 **Read and write Data Matrix barcodes from Python — with the native
