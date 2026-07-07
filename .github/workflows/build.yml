@@ -164,10 +164,21 @@ jobs:
           WHEEL=$(ls dist/*.whl | head -1)
           for V in 3.10 3.11 3.12 3.13 3.14 3.13t 3.14t; do
             echo "::group::Python $V"
-            uv venv ".t$V" --python "$V" || { echo "skip $V (unavailable)"; continue; }
+            uv venv ".t$V" --python "$V" || { echo "skip $V (interpreter unavailable)"; echo "::endgroup::"; continue; }
             PY=".t$V/bin/python"; [ -x "$PY" ] || PY=".t$V/Scripts/python.exe"
-            uv pip install --python "$PY" pytest pillow "$WHEEL"
-            uv pip install --python "$PY" numpy || echo "numpy unavailable on $V (ndarray test self-skips)"
+            # Binary-only: our wheel is py3-none, but its `pillow` dependency (and the
+            # `pytest` test dep) must also have a wheel for THIS interpreter. Some
+            # interpreters have none yet — e.g. pillow ships no cp313t wheel on any
+            # platform, so `pip install arbez-dmtx` on free-threaded 3.13t would have
+            # to source-build pillow (which fails on Windows: no build toolchain).
+            # Skip such a cell rather than source-building: there's nothing of ours to
+            # test where a user couldn't get the dependency as a wheel anyway. This
+            # re-enables automatically once pillow publishes the missing wheel.
+            if ! uv pip install --python "$PY" --only-binary=:all: pytest pillow "$WHEEL"; then
+              echo "skip $V (a required dependency has no binary wheel here, e.g. pillow on 3.13t)"
+              echo "::endgroup::"; continue
+            fi
+            uv pip install --python "$PY" --only-binary=:all: numpy || echo "numpy unavailable on $V (ndarray test self-skips)"
             "$PY" -c "import sys,arbez_dmtx; print('  loaded', arbez_dmtx.libdmtx_version(), '| gil', getattr(sys,'_is_gil_enabled',lambda:'n/a')())"
             "$PY" -m pytest tests -q
             echo "::endgroup::"
