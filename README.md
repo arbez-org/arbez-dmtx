@@ -38,10 +38,10 @@ That's it — the libdmtx shared library is inside the wheel. No system packages
 |---|---|---|
 | macOS | arm64 (Apple Silicon) | ✅ |
 | Linux | x86_64, aarch64 (glibc / manylinux_2_28) | ✅ |
+| Linux | x86_64, aarch64 (musl / musllinux_1_2, e.g. Alpine) | ✅ |
 | Windows | x86_64 | ✅ |
 
-Not yet built: macOS x86_64 (Intel), musllinux (Alpine), Windows arm64. If you
-need one, open an issue.
+Not yet built: macOS x86_64 (Intel), Windows arm64. If you need one, open an issue.
 
 ## Relationship to pylibdmtx
 

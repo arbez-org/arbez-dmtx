@@ -3,15 +3,16 @@ name: pypi-smoke
 # Post-publish smoke test: install arbez-dmtx FROM PyPI (the real published
 # wheels, NOT a local build) and run the test suite on every platform x Python.
 # build.yml proves the wheels we *build* are good; this proves the wheels users
-# actually `pip install` are good — across macOS arm64, Linux x86_64/aarch64 and
-# Windows, on CPython 3.10-3.14 incl. free-threaded 3.13t/3.14t.
+# actually `pip install` are good — across macOS arm64, Linux x86_64/aarch64
+# (glibc/manylinux + musl/musllinux) and Windows, on CPython 3.10-3.14 incl.
+# free-threaded 3.13t/3.14t.
 #
 # Manual / scheduled only — it depends on PyPI state, not on this commit.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Exact version to test (e.g. 0.0.1). Empty = latest on PyPI."
+        description: "Exact version to test (e.g. 0.0.2). Empty = latest on PyPI."
         required: false
         type: string
         default: ''
@@ -39,6 +40,12 @@ jobs:
           - id: linux-aarch64
             os: ubuntu-24.04-arm
             container: quay.io/pypa/manylinux_2_28_aarch64
+          - id: musllinux-x86_64
+            os: ubuntu-latest
+            container: quay.io/pypa/musllinux_1_2_x86_64
+          - id: musllinux-aarch64
+            os: ubuntu-24.04-arm
+            container: quay.io/pypa/musllinux_1_2_aarch64
           - id: windows-amd64
             os: windows-latest
             container: ''
@@ -81,14 +88,14 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: "Smoke (manylinux: /opt/python, uv fallback)"
+      - name: "Smoke (manylinux/musllinux: /opt/python, uv fallback)"
         if: matrix.container != ''
         shell: bash
         env:
           SPEC: ${{ steps.spec.outputs.spec }}
         run: |
           set -e
-          # The manylinux_2_28 image ships most cpXY[t] interpreters under
+          # The manylinux_2_28 / musllinux_1_2 images ship most cpXY[t] interpreters under
           # /opt/python, but not all (e.g. cp313t is currently absent). Prefer
           # /opt/python; for any version it lacks, provision the interpreter with
           # uv so the matrix is literally complete. The single py3-none-<plat>
