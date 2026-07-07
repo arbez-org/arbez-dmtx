@@ -35,13 +35,20 @@ jobs:
             os: ubuntu-24.04-arm
             container: quay.io/pypa/manylinux_2_28_aarch64
             plat: manylinux_2_28_aarch64
+          # musllinux is built via `docker run` on the GLIBC host (container: '' —
+          # see the "Build wheel + test (musllinux ...)" step), NOT as a job-level
+          # container: GitHub Actions cannot run Node JS actions (checkout /
+          # upload-artifact) inside an Alpine ARM64 container ("JavaScript Actions
+          # in Alpine containers are only supported on x64 Linux runners"). So
+          # checkout + artifact upload run on the glibc host and only the wheel
+          # build runs in the musl image — the same host-docker approach cibuildwheel uses.
           - id: musllinux-x86_64
             os: ubuntu-latest
-            container: quay.io/pypa/musllinux_1_2_x86_64
+            container: ''
             plat: musllinux_1_2_x86_64
           - id: musllinux-aarch64
             os: ubuntu-24.04-arm
-            container: quay.io/pypa/musllinux_1_2_aarch64
+            container: ''
             plat: musllinux_1_2_aarch64
           - id: windows-amd64
             os: windows-latest
@@ -89,14 +96,18 @@ jobs:
           dnf install -y autoconf automake libtool >/dev/null   # manylinux_2_28 == AlmaLinux 8
           bash scripts/build_libdmtx.sh src/arbez_dmtx/_libdmtx
 
-      - name: Build libdmtx (musllinux)
+      # musllinux: build libdmtx + wheel + retag + twine + test ALL inside the
+      # musl image via `docker run` on the glibc host (checkout already ran on the
+      # host; see the matrix comment). The script writes ./dist on the host mount
+      # so the shared upload-artifact step picks the wheel up. Runs natively —
+      # musllinux_1_2_x86_64 on the x64 runner, musllinux_1_2_aarch64 on the arm64 runner.
+      - name: Build wheel + test (musllinux via docker on glibc host)
         if: startsWith(matrix.id, 'musllinux')
+        shell: bash
         run: |
-          # musllinux_1_2 images are Alpine -> apk, not dnf. build-base provides
-          # gcc/make; autotools drives autogen.sh/autoreconf; curl+tar fetch the
-          # pinned source (build_libdmtx.sh is otherwise libc-agnostic).
-          apk add --no-cache build-base autoconf automake libtool curl tar >/dev/null
-          bash scripts/build_libdmtx.sh src/arbez_dmtx/_libdmtx
+          set -euo pipefail
+          docker run --rm -e PLAT="${{ matrix.plat }}" -v "$PWD":/io -w /io \
+            "quay.io/pypa/${{ matrix.plat }}" sh /io/scripts/musllinux_build_test.sh
 
       - name: Build libdmtx (Windows, vcpkg)
         if: matrix.id == 'windows-amd64'
@@ -140,8 +151,8 @@ jobs:
           echo "wheel: $(ls dist/*.whl)"
           "$P" -m twine check dist/*.whl
 
-      - name: Build wheel + retag + twine check (manylinux/musllinux)
-        if: startsWith(matrix.id, 'linux') || startsWith(matrix.id, 'musllinux')
+      - name: Build wheel + retag + twine check (manylinux)
+        if: startsWith(matrix.id, 'linux')
         shell: bash
         run: |
           set -e
@@ -169,12 +180,15 @@ jobs:
       # Install uv via the pinned action, NOT `curl | sh`: the test step runs in
       # the same job that produced dist/ (before the artifact upload), so an
       # unpinned remote installer is a supply-chain vector for the wheel.
+      # Host test path = macOS / Windows only. musllinux rows also have
+      # container: '' but are built+tested inside their docker step above (a musl
+      # wheel won't install on the glibc host), so exclude them here.
       - name: Set up uv (host)
-        if: matrix.container == ''
+        if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
         uses: astral-sh/setup-uv@v6
 
       - name: "Test matrix (host: uv)"
-        if: matrix.container == ''
+        if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
         shell: bash
         run: |
           set -e
@@ -201,7 +215,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: "Test matrix (manylinux/musllinux: /opt/python)"
+      - name: "Test matrix (manylinux: /opt/python)"
         if: matrix.container != ''
         shell: bash
         run: |
