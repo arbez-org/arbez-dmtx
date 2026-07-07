@@ -3,6 +3,16 @@
 Notable changes to **arbez-dmtx**. Versioning follows [SemVer](https://semver.org/)
 (pre-1.0: behaviour may change on minor bumps).
 
+## 0.0.2 — 2026-07-07
+
+Alpine / musl support.
+
+- **Added `musllinux_1_2` wheels for x86_64 and aarch64** — `pip install
+  arbez-dmtx` now works inside Alpine-based images (musl libc), not just glibc
+  (manylinux). The native libdmtx is built against musl in the
+  `quay.io/pypa/musllinux_1_2_*` containers and bundled the same way. Closes #1.
+- No API changes; the runtime loader and public surface are unchanged.
+
 ## 0.0.1 — 2026-06-16
 
 First release. A self-contained, modern continuation of

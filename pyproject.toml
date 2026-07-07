@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arbez-dmtx"
-version = "0.0.1"
+version = "0.0.2"
 description = "Self-contained DataMatrix encode/decode (vendored libdmtx, bundled on every OS, free-threading safe) - a modern pylibdmtx successor"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
