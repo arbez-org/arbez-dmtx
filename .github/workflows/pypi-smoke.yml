@@ -40,12 +40,20 @@ jobs:
           - id: linux-aarch64
             os: ubuntu-24.04-arm
             container: quay.io/pypa/manylinux_2_28_aarch64
+          # musllinux runs via `docker run` on the GLIBC host (container: '' + plat:),
+          # NOT a job-level container: GitHub Actions cannot run Node actions
+          # (checkout / setup-uv) inside an Alpine ARM64 container ("JavaScript Actions
+          # in Alpine containers are only supported on x64 Linux runners"). So checkout
+          # runs on the host and the from-PyPI smoke runs in the musl image against the
+          # mounted tests/ — the same host-docker pattern as build.yml.
           - id: musllinux-x86_64
             os: ubuntu-latest
-            container: quay.io/pypa/musllinux_1_2_x86_64
+            container: ''
+            plat: musllinux_1_2_x86_64
           - id: musllinux-aarch64
             os: ubuntu-24.04-arm
-            container: quay.io/pypa/musllinux_1_2_aarch64
+            container: ''
+            plat: musllinux_1_2_aarch64
           - id: windows-amd64
             os: windows-latest
             container: ''
@@ -63,15 +71,18 @@ jobs:
             echo "spec=arbez-dmtx" >> "$GITHUB_OUTPUT"
           fi
 
+      # Host smoke path = macOS / Windows only. musllinux rows also have
+      # container: '' but are smoke-tested inside their docker step below (a musl
+      # wheel won't install on the glibc host), so exclude them here.
       - name: Set up uv (host)
-        if: matrix.container == ''
+        if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
         uses: astral-sh/setup-uv@v6
 
       # --only-binary=:all: makes the intent explicit: a matching wheel must
       # exist on PyPI for this platform x Python. There is no sdist, so a missing
       # wheel fails loudly here instead of silently trying to build from source.
       - name: "Smoke (host: uv)"
-        if: matrix.container == ''
+        if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
         shell: bash
         env:
           SPEC: ${{ steps.spec.outputs.spec }}
@@ -88,7 +99,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: "Smoke (manylinux/musllinux: /opt/python, uv fallback)"
+      - name: "Smoke (manylinux: /opt/python, uv fallback)"
         if: matrix.container != ''
         shell: bash
         env:
@@ -125,3 +136,18 @@ jobs:
             "$PY" -m pytest tests -q
             echo "::endgroup::"
           done
+
+      # musllinux: install the PUBLISHED wheel from PyPI and pytest the mounted
+      # tests/ INSIDE the musl image via `docker run` on the glibc host (checkout
+      # ran on the host; see the matrix comment). Mirrors build.yml's musllinux
+      # step but installs from PyPI instead of building. Runs natively — x86_64 on
+      # the x64 runner, aarch64 on the arm64 runner.
+      - name: "Smoke (musllinux via docker on glibc host)"
+        if: startsWith(matrix.id, 'musllinux')
+        shell: bash
+        env:
+          SPEC: ${{ steps.spec.outputs.spec }}
+        run: |
+          set -euo pipefail
+          docker run --rm -e SPEC="$SPEC" -v "$PWD":/io -w /io \
+            "quay.io/pypa/${{ matrix.plat }}" sh /io/scripts/musllinux_smoke_test.sh
