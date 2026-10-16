@@ -1,8 +1,18 @@
 """Low-level wrapper around libdmtx's interface
 """
 from ctypes import (
-    c_double, c_int, c_long, c_size_t, c_ubyte, c_uint, c_ulong,
-    c_ulonglong, c_char_p, Structure, CFUNCTYPE, POINTER
+    CFUNCTYPE,
+    POINTER,
+    Structure,
+    c_char_p,
+    c_double,
+    c_int,
+    c_long,
+    c_size_t,
+    c_ubyte,
+    c_uint,
+    c_ulong,
+    c_ulonglong,
 )
 from enum import IntEnum, unique
 

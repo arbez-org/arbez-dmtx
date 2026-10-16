@@ -2,7 +2,7 @@
 
 The package is pure ctypes (no compiled extension to bind a CPython ABI) but it
 ships a native libdmtx, so the wheel must be platform-tagged yet importable on
-every Python 3.10-3.14 including free-threaded 3.13t/3.14t. The default
+every Python 3.10-3.15 including free-threaded 3.13t/3.14t/3.15t. The default
 bdist_wheel would tag an impure-but-extension-less package per-interpreter; this
 override pins ``py3``/``none`` so ONE wheel per platform serves all Pythons.
 

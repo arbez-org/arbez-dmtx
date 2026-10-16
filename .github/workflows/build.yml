@@ -55,7 +55,7 @@ jobs:
             container: ''
             plat: win_amd64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # ---------- stamp the release version (only when release.yml calls us) ----------
       - name: Inject version
@@ -185,7 +185,7 @@ jobs:
       # wheel won't install on the glibc host), so exclude them here.
       - name: Set up uv (host)
         if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10
 
       - name: "Test matrix (host: uv)"
         if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
@@ -193,20 +193,17 @@ jobs:
         run: |
           set -e
           WHEEL=$(ls dist/*.whl | head -1)
-          for V in 3.10 3.11 3.12 3.13 3.14 3.13t 3.14t; do
+          for V in 3.10 3.11 3.12 3.13 3.14 3.15 3.13t 3.14t 3.15t; do
             echo "::group::Python $V"
             uv venv ".t$V" --python "$V" || { echo "skip $V (interpreter unavailable)"; echo "::endgroup::"; continue; }
             PY=".t$V/bin/python"; [ -x "$PY" ] || PY=".t$V/Scripts/python.exe"
-            # Binary-only: our wheel is py3-none, but its `pillow` dependency (and the
-            # `pytest` test dep) must also have a wheel for THIS interpreter. Some
-            # interpreters have none yet — e.g. pillow ships no cp313t wheel on any
-            # platform, so `pip install arbez-dmtx` on free-threaded 3.13t would have
-            # to source-build pillow (which fails on Windows: no build toolchain).
-            # Skip such a cell rather than source-building: there's nothing of ours to
-            # test where a user couldn't get the dependency as a wheel anyway. This
-            # re-enables automatically once pillow publishes the missing wheel.
+            # Binary-only: our wheel is py3-none, but pillow and pytest must also
+            # have a wheel for THIS interpreter. Skip the cell rather than
+            # source-building: there is nothing of ours to test where a user could
+            # not install those dependencies as wheels. The cell turns back on
+            # once the missing wheel is published.
             if ! uv pip install --python "$PY" --only-binary=:all: pytest pillow "$WHEEL"; then
-              echo "skip $V (a required dependency has no binary wheel here, e.g. pillow on 3.13t)"
+              echo "skip $V (a required dependency has no binary wheel here)"
               echo "::endgroup::"; continue
             fi
             uv pip install --python "$PY" --only-binary=:all: numpy || echo "numpy unavailable on $V (ndarray test self-skips)"
@@ -227,7 +224,9 @@ jobs:
                     /opt/python/cp313-cp313/bin/python \
                     /opt/python/cp313-cp313t/bin/python \
                     /opt/python/cp314-cp314/bin/python \
-                    /opt/python/cp314-cp314t/bin/python; do
+                    /opt/python/cp314-cp314t/bin/python \
+                    /opt/python/cp315-cp315/bin/python \
+                    /opt/python/cp315-cp315t/bin/python; do
             [ -x "$PY" ] || { echo "skip (missing): $PY"; continue; }
             echo "::group::$PY"
             "$PY" -m pip install --upgrade pip >/dev/null
@@ -238,7 +237,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.id }}
           path: dist/*.whl

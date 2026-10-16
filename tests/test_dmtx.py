@@ -227,7 +227,7 @@ def test_decode_timeout_zero_and_corrections_zero_are_passed_through():
 @pytest.mark.skipif(not sysconfig.get_config_var("Py_GIL_DISABLED"),
                     reason="not a free-threaded build")
 def test_import_does_not_reenable_gil():
-    """On a free-threaded (3.13t/3.14t) build, importing the pure-ctypes
+    """On a free-threaded (3.13t/3.14t/3.15t) build, importing the pure-ctypes
     arbez_dmtx must NOT have re-enabled the GIL."""
     assert sys._is_gil_enabled() is False
 
@@ -252,7 +252,7 @@ def test_both_decoders_agree():
     assert arbez_dmtx.decode(img)[0].data == payload
     try:
         import zxingcpp
-    except Exception:
+    except ImportError:
         return
     np = pytest.importorskip("numpy")
     zx = [r for r in zxingcpp.read_barcodes(np.asarray(img))

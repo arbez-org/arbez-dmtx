@@ -23,7 +23,7 @@ jobs:
   check-libdmtx:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Open an issue if a newer libdmtx exists
         env:
           GH_TOKEN: ${{ github.token }}
@@ -44,7 +44,7 @@ jobs:
             "Upstream **dmtx/libdmtx** published **v$LATEST**; arbez-dmtx currently vendors **$CUR**." \
             "" \
             "To update: set both \`LIBDMTX_VERSION\` to \`$LATEST\` and \`LIBDMTX_SHA256\` to the new tarball digest, then push to \`main\`." \
-            "The wheels CI rebuilds + tests every platform (Python 3.10-3.14 incl. 3.13t/3.14t)" \
+            "The wheels CI rebuilds + tests every platform (Python 3.10-3.15 incl. 3.13t/3.14t/3.15t)" \
             "against the new libdmtx, so the change self-validates." \
             "" \
             "Check upstream changes first (API breaks):" \

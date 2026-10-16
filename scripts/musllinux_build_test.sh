@@ -34,14 +34,14 @@ esac
 "$P" -m twine check dist/*.whl
 
 # Exercise the single py3-none wheel on every interpreter the image ships within
-# our supported range (>=3.10,<3.15). Absent versions (e.g. cp313t) skip cleanly;
-# cp314-cp314t exercises the free-threaded (GIL-off) path.
+# our supported range (>=3.10,<3.16). Absent versions (e.g. cp313t) skip cleanly;
+# cp314-cp314t and cp315-cp315t exercise the free-threaded (GIL-off) path.
 for PY in /opt/python/cp3*/bin/python; do
   [ -x "$PY" ] || continue
   tag=$(basename "$(dirname "$(dirname "$PY")")")   # e.g. cp310-cp310, cp314-cp314t
   case "$tag" in
-    cp310-*|cp311-*|cp312-*|cp313-*|cp314-*) ;;
-    *) echo "skip $tag (outside >=3.10,<3.15)"; continue ;;
+    cp310-*|cp311-*|cp312-*|cp313-*|cp314-*|cp315-*) ;;
+    *) echo "skip $tag (outside >=3.10,<3.16)"; continue ;;
   esac
   echo "--- musl $tag ---"
   "$PY" -m pip install -q pytest pillow dist/*.whl
