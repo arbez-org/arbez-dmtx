@@ -185,7 +185,7 @@ jobs:
       # wheel won't install on the glibc host), so exclude them here.
       - name: Set up uv (host)
         if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.3.0
 
       - name: "Test matrix (host: uv)"
         if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')

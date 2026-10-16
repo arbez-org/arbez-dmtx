@@ -13,7 +13,7 @@ Python 3.15, and Actions off Node 20.
   when a runner image has no such interpreter. No API change. Bundled libdmtx
   stays 0.7.8.
 - **GitHub Actions moved off Node 20.** `actions/checkout` v7,
-  `actions/setup-python` v7, `astral-sh/setup-uv` v10, `actions/upload-artifact`
+  `actions/setup-python` v7, `astral-sh/setup-uv` v10.3.0, `actions/upload-artifact`
   v7, and `actions/download-artifact` v8 run on Node 24. The PyPI publish
   composite is the v1.14.2 commit, whose `setup-python` is also Node 24.
 - **Ruff 0.16's expanded default rules are clean.** `uvx ruff check` is

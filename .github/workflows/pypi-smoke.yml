@@ -76,7 +76,7 @@ jobs:
       # wheel won't install on the glibc host), so exclude them here.
       - name: Set up uv (host)
         if: matrix.container == '' && !startsWith(matrix.id, 'musllinux')
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.3.0
 
       # --only-binary=:all: makes the intent explicit: a matching wheel must
       # exist on PyPI for this platform x Python. There is no sdist, so a missing
