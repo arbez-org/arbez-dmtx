@@ -2,15 +2,15 @@
 
 [![PyPI](https://img.shields.io/pypi/v/arbez-dmtx)](https://pypi.org/project/arbez-dmtx/)
 [![CI](https://github.com/arbez-org/arbez-dmtx/actions/workflows/wheels.yml/badge.svg)](https://github.com/arbez-org/arbez-dmtx/actions/workflows/wheels.yml)
-[![Python 3.10–3.14](https://img.shields.io/badge/python-3.10--3.14-blue.svg)](https://pypi.org/project/arbez-dmtx/)
+[![Python 3.10–3.15](https://img.shields.io/badge/python-3.10--3.15-blue.svg)](https://pypi.org/project/arbez-dmtx/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 
 **Read and write Data Matrix barcodes from Python — with the native
 [libdmtx](https://github.com/dmtx/libdmtx) library bundled in the wheel on every
 platform.** No `brew install` / `apt-get install`, no compiler. Pure `ctypes`,
-so one small wheel per platform works on **all of Python 3.10–3.14, including
-free-threaded 3.13t / 3.14t**.
+so one small wheel per platform works on **all of Python 3.10–3.15, including
+free-threaded 3.13t / 3.14t / 3.15t**.
 
 ```python
 from arbez_dmtx import decode, encode
@@ -55,7 +55,7 @@ pylibdmtx awkward to depend on in 2026:
 |---|---|---|
 | Native libdmtx bundled | Windows only | **every OS** (macOS arm64, Linux x86_64/aarch64, Windows) |
 | Off-Windows install | `brew`/`apt` the system lib yourself | nothing — it's in the wheel |
-| Python support | 2.7, 3.5–3.10 | **3.10–3.14** incl. free-threaded **3.13t/3.14t** |
+| Python support | 2.7, 3.5–3.10 | **3.10–3.15** incl. free-threaded **3.13t/3.14t/3.15t** |
 | Bundled libdmtx | 0.7.x (older) | **tracks upstream** (currently 0.7.8) via a CI watcher |
 | `distutils` | required (broken on 3.12+) | removed |
 | PyPI freshness | stale | maintained |
@@ -100,7 +100,7 @@ from arbez_dmtx import (
 No compiled extension means (a) **one `py3-none-<platform>` wheel covers every
 Python version** — including the free-threaded builds, with no per-ABI matrix —
 and (b) importing it **never re-enables the GIL**; `ctypes` releases the GIL
-around each native call, so concurrent decode is safe on 3.13t/3.14t.
+around each native call, so concurrent decode is safe on 3.13t/3.14t/3.15t.
 
 ## License & attribution
 

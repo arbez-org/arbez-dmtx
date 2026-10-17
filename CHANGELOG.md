@@ -3,6 +3,24 @@
 Notable changes to **arbez-dmtx**. Versioning follows [SemVer](https://semver.org/)
 (pre-1.0: behaviour may change on minor bumps).
 
+## 0.0.3 — 2026-10-16
+
+Python 3.15, and Actions off Node 20.
+
+- **`Requires-Python` is now `>=3.10,<3.16`.** 0.0.2 is already published with
+  `<3.15`, so the cap lift is this release. The wheel stays `py3-none` (no ABI
+  matrix). CPython 3.15 and free-threaded 3.15t join the build matrix and skip
+  when a runner image has no such interpreter. No API change. Bundled libdmtx
+  stays 0.7.8.
+- **GitHub Actions moved off Node 20.** `actions/checkout` v7,
+  `actions/setup-python` v7, `astral-sh/setup-uv` v10.3.0, `actions/upload-artifact`
+  v7, and `actions/download-artifact` v8 run on Node 24. The PyPI publish
+  composite is the v1.14.2 commit, whose `setup-python` is also Node 24.
+- **Ruff 0.16's expanded default rules are clean.** `uvx ruff check` is
+  unpinned in CI. The fixes are import order, f-strings, a sorted `__all__`,
+  and catching `ImportError` around the optional zxing-cpp import. No behavior
+  change.
+
 ## 0.0.2 — 2026-07-07
 
 Alpine / musl support.

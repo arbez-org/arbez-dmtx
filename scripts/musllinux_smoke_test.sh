@@ -20,6 +20,8 @@ set -e
 # is identical across Pythons, so this exercises the same published wheel.
 /opt/python/cp312-cp312/bin/pip install -q --upgrade uv
 UV=/opt/python/cp312-cp312/bin/uv
+# 3.15 / 3.15t stay off this from-PyPI loop until the published release
+# allows them (0.0.2 declares Requires-Python <3.15).
 for V in 3.10 3.11 3.12 3.13 3.14 3.13t 3.14t; do
   echo "::group::Python $V"
   base=$(echo "$V" | tr -d '.t')          # 3.13 -> 313 ; 3.13t -> 313  (POSIX; no bash ${//})

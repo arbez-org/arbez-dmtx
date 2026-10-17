@@ -6,18 +6,40 @@ from functools import partial
 
 from .pylibdmtx_error import PyLibDMTXError
 from .wrapper import (
-    c_ubyte_p, dmtxImageCreate, dmtxImageDestroy, dmtxDecodeCreate,
-    dmtxDecodeDestroy, dmtxRegionDestroy, dmtxMessageDestroy, dmtxTimeAdd,
-    dmtxTimeNow, dmtxDecodeMatrixRegion, dmtxRegionFindNext,
-    dmtxMatrix3VMultiplyBy, dmtxDecodeSetProp, DmtxPackOrder, DmtxProperty,
-    DmtxUndefined, DmtxVector2, EXTERNAL_DEPENDENCIES,
-    DmtxSymbolSize, DmtxScheme, dmtxEncodeSetProp, dmtxEncodeDataMatrix,
-    dmtxImageGetProp, dmtxEncodeCreate, dmtxEncodeDestroy
+    EXTERNAL_DEPENDENCIES,
+    DmtxPackOrder,
+    DmtxProperty,
+    DmtxScheme,
+    DmtxSymbolSize,
+    DmtxUndefined,
+    DmtxVector2,
+    c_ubyte_p,
+    dmtxDecodeCreate,
+    dmtxDecodeDestroy,
+    dmtxDecodeMatrixRegion,
+    dmtxDecodeSetProp,
+    dmtxEncodeCreate,
+    dmtxEncodeDataMatrix,
+    dmtxEncodeDestroy,
+    dmtxEncodeSetProp,
+    dmtxImageCreate,
+    dmtxImageDestroy,
+    dmtxImageGetProp,
+    dmtxMatrix3VMultiplyBy,
+    dmtxMessageDestroy,
+    dmtxRegionDestroy,
+    dmtxRegionFindNext,
+    dmtxTimeAdd,
+    dmtxTimeNow,
 )
 
 __all__ = [
-    'decode', 'encode', 'Encoded', 'ENCODING_SCHEME_NAMES',
-    'ENCODING_SIZE_NAMES', 'EXTERNAL_DEPENDENCIES',
+    'ENCODING_SCHEME_NAMES',
+    'ENCODING_SIZE_NAMES',
+    'EXTERNAL_DEPENDENCIES',
+    'Encoded',
+    'decode',
+    'encode',
 ]
 
 ENCODING_SCHEME_PREFIX = 'DmtxScheme'
@@ -215,25 +237,21 @@ def _pixel_data(image):
                 and width > 0 and height > 0):
             raise PyLibDMTXError(
                 'Invalid dimensions: width and height must be positive '
-                'integers, got ({0!r}, {1!r})'.format(width, height)
+                f'integers, got ({width!r}, {height!r})'
             )
 
         # Check dimensions
         if 0 != len(pixels) % (width * height):
             raise PyLibDMTXError(
-                (
-                    'Inconsistent dimensions: image data of {0} bytes is not '
-                    'divisible by (width x height = {1})'
-                ).format(len(pixels), (width * height))
+                f'Inconsistent dimensions: image data of {len(pixels)} bytes is not '
+                f'divisible by (width x height = {width * height})'
             )
 
     # Compute bits-per-pixel
     bpp = 8 * len(pixels) // (width * height)
     if bpp not in _PACK_ORDER:
         raise PyLibDMTXError(
-            'Unsupported bits-per-pixel: [{0}] Should be one of {1}'.format(
-                bpp, sorted(_PACK_ORDER.keys())
-            )
+            f'Unsupported bits-per-pixel: [{bpp}] Should be one of {sorted(_PACK_ORDER.keys())}'
         )
 
     return pixels, width, height, bpp
@@ -267,48 +285,47 @@ def decode(image, timeout=None, gap_size=None, shrink=1, shape=None,
         dmtx_timeout = dmtxTimeAdd(now, timeout)
 
     if max_count is not None and max_count < 1:
-        raise ValueError('Invalid max_count [{0}]'.format(max_count))
+        raise ValueError(f'Invalid max_count [{max_count}]')
 
     pixels, width, height, bpp = _pixel_data(image)
 
     results = []
     with _image(
         cast(pixels, c_ubyte_p), width, height, _PACK_ORDER[bpp]
-    ) as img:
-        with _decoder(img, shrink) as decoder:
-            properties = [
-                (DmtxProperty.DmtxPropScanGap, gap_size),
-                (DmtxProperty.DmtxPropSymbolSize, shape),
-                (DmtxProperty.DmtxPropSquareDevn, deviation),
-                (DmtxProperty.DmtxPropEdgeThresh, threshold),
-                (DmtxProperty.DmtxPropEdgeMin, min_edge),
-                (DmtxProperty.DmtxPropEdgeMax, max_edge)
-            ]
+    ) as img, _decoder(img, shrink) as decoder:
+        properties = [
+            (DmtxProperty.DmtxPropScanGap, gap_size),
+            (DmtxProperty.DmtxPropSymbolSize, shape),
+            (DmtxProperty.DmtxPropSquareDevn, deviation),
+            (DmtxProperty.DmtxPropEdgeThresh, threshold),
+            (DmtxProperty.DmtxPropEdgeMin, min_edge),
+            (DmtxProperty.DmtxPropEdgeMax, max_edge)
+        ]
 
-            # Set only those properties with a non-None value
-            for prop, value in ((p, v) for p, v in properties if v is not None):
-                dmtxDecodeSetProp(decoder, prop, value)
+        # Set only those properties with a non-None value
+        for prop, value in ((p, v) for p, v in properties if v is not None):
+            dmtxDecodeSetProp(decoder, prop, value)
 
-            if corrections is None:  # not `if not corrections:` — 0 is a valid
-                corrections = DmtxUndefined  # explicit "no corrections", not "auto"
+        if corrections is None:  # not `if not corrections:` — 0 is a valid
+            corrections = DmtxUndefined  # explicit "no corrections", not "auto"
 
-            while True:
-                with _region(decoder, dmtx_timeout) as region:
-                    # Finished file or ran out of time before finding another
-                    # region
-                    if not region:
-                        break
-                    else:
-                        # Decoded
-                        res = _decode_region(
-                            decoder, region, corrections, shrink
-                        )
-                        if res:
-                            results.append(res)
+        while True:
+            with _region(decoder, dmtx_timeout) as region:
+                # Finished file or ran out of time before finding another
+                # region
+                if not region:
+                    break
+                else:
+                    # Decoded
+                    res = _decode_region(
+                        decoder, region, corrections, shrink
+                    )
+                    if res:
+                        results.append(res)
 
-                            # Stop if we've reached maximum count
-                            if max_count and len(results) == max_count:
-                                break
+                        # Stop if we've reached maximum count
+                        if max_count and len(results) == max_count:
+                            break
 
     return results
 
@@ -350,17 +367,15 @@ def encode(data, scheme=None, size=None):
     # than the text the caller intended. Make the type error explicit.
     if not isinstance(data, (bytes, bytearray)):
         raise TypeError(
-            'data must be bytes, not {0} (encode the str first, '
-            "e.g. encode(text.encode('utf-8')))".format(type(data).__name__)
+            f'data must be bytes, not {type(data).__name__} (encode the str first, '
+            "e.g. encode(text.encode('utf-8')))"
         )
 
     size = size if size else 'ShapeAuto'
-    size_name = '{0}{1}'.format(ENCODING_SIZE_PREFIX, size)
+    size_name = f'{ENCODING_SIZE_PREFIX}{size}'
     if not hasattr(DmtxSymbolSize, size_name):
         raise PyLibDMTXError(
-            'Invalid size [{0}]: should be one of {1}'.format(
-                size, ENCODING_SIZE_NAMES
-            )
+            f'Invalid size [{size}]: should be one of {ENCODING_SIZE_NAMES}'
         )
     size = getattr(DmtxSymbolSize, size_name)
 
@@ -373,9 +388,7 @@ def encode(data, scheme=None, size=None):
     canonical = _scheme_by_lower.get(scheme.lower())
     if canonical is None:
         raise PyLibDMTXError(
-            'Invalid scheme [{0}]: should be one of {1}'.format(
-                scheme, ENCODING_SCHEME_NAMES
-            )
+            f'Invalid scheme [{scheme}]: should be one of {ENCODING_SCHEME_NAMES}'
         )
     scheme = getattr(DmtxScheme, ENCODING_SCHEME_PREFIX + canonical)
 
